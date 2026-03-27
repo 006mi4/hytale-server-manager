@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
-    "build": "tsc && vite build && tsc -p tsconfig.node.json",
+    "dev": "tsc -p tsconfig.node.json && node -e \"require('fs').cpSync('electron/migrations','dist-electron/migrations',{recursive:true})\" && concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "dev:electron": "tsc -p tsconfig.node.json && node -e \"require('fs').cpSync('electron/migrations','dist-electron/migrations',{recursive:true})\"",
+    "build": "vite build && tsc -p tsconfig.node.json && node -e \"require('fs').cpSync('electron/migrations','dist-electron/migrations',{recursive:true})\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "pack": "npm run build && electron-builder --dir",
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
     "dist": "npm run build && electron-builder"
   },
   "dependencies": {
@@ -19,6 +21,7 @@
     "react-router-dom": "^7.13.2"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
     "@types/react": "^19.2.14",
