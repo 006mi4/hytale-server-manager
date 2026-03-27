@@ -113,16 +113,20 @@ export class ServerManager {
       throw new Error(`Server '${name}' already exists`);
     }
 
+    // Verify shared server files exist
+    const sharedServerDir = path.join(this.serversDir, '_shared', 'Server');
+    const sharedAssetsZip = path.join(this.serversDir, '_shared', 'Assets.zip');
+    const sharedJar = path.join(sharedServerDir, 'HytaleServer.jar');
+    if (!fs.existsSync(sharedJar)) {
+      throw new Error('Server files not found. Please complete the setup wizard first (download server files).');
+    }
+
     const port = await this.findNextPort();
     const serverPath = path.join(this.serversDir, name);
     const serverBinPath = path.join(serverPath, 'Server');
 
     // Create directory structure
     fs.mkdirSync(serverBinPath, { recursive: true });
-
-    // Copy shared files
-    const sharedServerDir = path.join(this.serversDir, '_shared', 'Server');
-    const sharedAssetsZip = path.join(this.serversDir, '_shared', 'Assets.zip');
 
     if (fs.existsSync(sharedServerDir)) {
       for (const file of fs.readdirSync(sharedServerDir)) {

@@ -130,11 +130,18 @@ export class DownloaderService {
       child.stdout.on('data', handleOutput);
       child.stderr.on('data', handleOutput);
 
-      child.on('close', (code) => {
+      child.on('close', async (code) => {
         if (code === 0) {
-          log.info('Server files downloaded successfully');
-          mainWindow.webContents.send('downloader:progress', { percent: 100, stage: 'done' });
-          resolve();
+          log.info('Download complete, extracting game files...');
+          mainWindow.webContents.send('downloader:progress', { percent: 95, stage: 'extracting-server' });
+          try {
+            await this.extractGameFiles(sharedDir);
+            mainWindow.webContents.send('downloader:progress', { percent: 100, stage: 'done' });
+            resolve();
+          } catch (extractErr) {
+            log.error('Failed to extract game files:', extractErr);
+            reject(new Error(`Download succeeded but extraction failed: ${extractErr}`));
+          }
         } else {
           log.error('hytale-downloader exited with code', code, '\nOutput:', fullOutput);
           reject(new Error(`Download failed (exit code ${code}). Check logs for details.`));
@@ -146,6 +153,41 @@ export class DownloaderService {
         reject(err);
       });
     });
+  }
+
+  /**
+   * Find the downloaded game zip in sharedDir and extract it.
+   * The downloader creates a file like "2026.03.26-89796e57b.zip" containing
+   * Server/, Assets.zip, start.sh, start.bat
+   */
+  private async extractGameFiles(sharedDir: string): Promise<void> {
+    // Find the game zip (newest .zip that isn't hytale-downloader.zip or credentials)
+    const files = fs.readdirSync(sharedDir).filter(f =>
+      f.endsWith('.zip') && !f.startsWith('hytale-downloader') && f !== 'Assets.zip'
+    );
+    if (files.length === 0) {
+      throw new Error('No game zip found in ' + sharedDir);
+    }
+    // Sort by modification time, newest first
+    files.sort((a, b) => {
+      const statA = fs.statSync(path.join(sharedDir, a));
+      const statB = fs.statSync(path.join(sharedDir, b));
+      return statB.mtimeMs - statA.mtimeMs;
+    });
+    const gameZip = path.join(sharedDir, files[0]);
+    log.info('Extracting game zip:', gameZip);
+
+    await this.extractZip(gameZip, sharedDir);
+
+    // Verify extraction
+    const jarPath = path.join(sharedDir, 'Server', 'HytaleServer.jar');
+    if (!fs.existsSync(jarPath)) {
+      throw new Error('Extraction completed but HytaleServer.jar not found');
+    }
+
+    // Clean up the zip to save disk space
+    fs.unlinkSync(gameZip);
+    log.info('Game files extracted successfully. HytaleServer.jar found.');
   }
 
   private getDownloaderPath(): string {
