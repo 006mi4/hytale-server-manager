@@ -1,0 +1,39 @@
+{
+  "app": { "title": "Hytale Server Manager" },
+  "setup": {
+    "title": "Setup", "step1": "Create Account", "step2": "Check Java",
+    "step3": "Download Server Files", "step4": "Complete",
+    "username": "Username", "password": "Password", "confirmPassword": "Confirm Password",
+    "createAccount": "Create Account", "next": "Next", "finish": "Go to Dashboard",
+    "javaFound": "Java {{version}} detected", "javaNotFound": "Java 25 not found",
+    "javaInstallHint": "Please install Java 25 from Adoptium", "recheck": "Re-check",
+    "downloading": "Downloading server files...", "authRequired": "Hytale authentication required",
+    "visitUrl": "Visit this URL and enter the code:", "setupComplete": "Setup complete!",
+    "setupSummary": "Your Hytale Server Manager is ready to use."
+  },
+  "login": {
+    "title": "Login", "username": "Username", "password": "Password",
+    "rememberMe": "Remember me", "login": "Login", "invalidCredentials": "Invalid username or password"
+  },
+  "dashboard": {
+    "title": "Dashboard", "newServer": "New Server", "startAll": "Start All", "stopAll": "Stop All",
+    "search": "Search servers...", "noServers": "No servers yet. Create your first server!",
+    "serverName": "Server Name", "create": "Create", "cancel": "Cancel",
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"?"
+  },
+  "server": {
+    "console": "Console", "config": "Configuration", "whitelist": "Whitelist",
+    "bans": "Bans", "permissions": "Permissions", "start": "Start", "stop": "Stop",
+    "restart": "Restart", "delete": "Delete", "sendCommand": "Send command...",
+    "status": { "online": "Online", "offline": "Offline", "starting": "Starting", "stopping": "Stopping", "crashed": "Crashed" },
+    "port": "Port", "memory": "Memory", "viewDistance": "View Distance", "pvp": "PvP",
+    "fallDamage": "Fall Damage", "autoUpdate": "Auto Update", "save": "Save",
+    "maxPlayers": "Max Players", "whitelistEnabled": "Whitelist", "backupEnabled": "Backup", "backupFrequency": "Backup Frequency (min)"
+  },
+  "settings": {
+    "title": "Settings", "language": "Language", "javaPath": "Java Path",
+    "defaultMemory": "Default Memory", "hytaleAuth": "Hytale Authentication",
+    "authenticated": "Authenticated as {{username}}", "notAuthenticated": "Not authenticated", "save": "Save"
+  },
+  "common": { "enabled": "Enabled", "disabled": "Disabled", "add": "Add", "remove": "Remove", "error": "Error", "success": "Success" }
+}

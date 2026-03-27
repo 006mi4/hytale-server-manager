@@ -1,0 +1,39 @@
+{
+  "app": { "title": "Hytale Server Manager" },
+  "setup": {
+    "title": "Einrichtung", "step1": "Account erstellen", "step2": "Java pruefen",
+    "step3": "Server-Dateien herunterladen", "step4": "Fertig",
+    "username": "Benutzername", "password": "Passwort", "confirmPassword": "Passwort bestaetigen",
+    "createAccount": "Account erstellen", "next": "Weiter", "finish": "Zum Dashboard",
+    "javaFound": "Java {{version}} erkannt", "javaNotFound": "Java 25 nicht gefunden",
+    "javaInstallHint": "Bitte installiere Java 25 von Adoptium", "recheck": "Erneut pruefen",
+    "downloading": "Server-Dateien werden heruntergeladen...", "authRequired": "Hytale-Authentifizierung erforderlich",
+    "visitUrl": "Besuche diese URL und gib den Code ein:", "setupComplete": "Einrichtung abgeschlossen!",
+    "setupSummary": "Dein Hytale Server Manager ist einsatzbereit."
+  },
+  "login": {
+    "title": "Anmelden", "username": "Benutzername", "password": "Passwort",
+    "rememberMe": "Angemeldet bleiben", "login": "Anmelden", "invalidCredentials": "Ungueltiger Benutzername oder Passwort"
+  },
+  "dashboard": {
+    "title": "Dashboard", "newServer": "Neuer Server", "startAll": "Alle starten", "stopAll": "Alle stoppen",
+    "search": "Server suchen...", "noServers": "Noch keine Server. Erstelle deinen ersten Server!",
+    "serverName": "Servername", "create": "Erstellen", "cancel": "Abbrechen",
+    "confirmDelete": "Moechtest du \"{{name}}\" wirklich loeschen?"
+  },
+  "server": {
+    "console": "Konsole", "config": "Konfiguration", "whitelist": "Whitelist",
+    "bans": "Bans", "permissions": "Berechtigungen", "start": "Starten", "stop": "Stoppen",
+    "restart": "Neustarten", "delete": "Loeschen", "sendCommand": "Befehl eingeben...",
+    "status": { "online": "Online", "offline": "Offline", "starting": "Startet", "stopping": "Stoppt", "crashed": "Abgestuerzt" },
+    "port": "Port", "memory": "Arbeitsspeicher", "viewDistance": "Sichtweite", "pvp": "PvP",
+    "fallDamage": "Fallschaden", "autoUpdate": "Auto-Update", "save": "Speichern",
+    "maxPlayers": "Max. Spieler", "whitelistEnabled": "Whitelist", "backupEnabled": "Backup", "backupFrequency": "Backup-Intervall (min)"
+  },
+  "settings": {
+    "title": "Einstellungen", "language": "Sprache", "javaPath": "Java-Pfad",
+    "defaultMemory": "Standard-Arbeitsspeicher", "hytaleAuth": "Hytale-Authentifizierung",
+    "authenticated": "Angemeldet als {{username}}", "notAuthenticated": "Nicht authentifiziert", "save": "Speichern"
+  },
+  "common": { "enabled": "Aktiviert", "disabled": "Deaktiviert", "add": "Hinzufuegen", "remove": "Entfernen", "error": "Fehler", "success": "Erfolg" }
+}
