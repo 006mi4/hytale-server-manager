@@ -263,8 +263,19 @@ export class ServerManager {
         if (line.trim()) appendLine(line);
       }
       // Detect server online
-      if (runningServer.status === 'starting' && text.includes('Done')) {
+      if (runningServer.status === 'starting' && (text.includes('Server Booted') || text.includes('Done'))) {
         this.setStatus(id, 'online');
+
+        // Auto-send auth command if server reports no tokens
+        if (text.includes('No server tokens configured')) {
+          setTimeout(() => {
+            proc.stdin?.write('/auth login device\n');
+          }, 1000);
+        }
+      }
+      // Also catch the auth warning that comes after boot
+      if (text.includes('No server tokens configured') && runningServer.status === 'online') {
+        proc.stdin?.write('/auth login device\n');
       }
     });
 
