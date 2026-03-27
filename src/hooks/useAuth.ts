@@ -57,7 +57,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           await refresh();
         }
       } catch {
-        setState({ loading: false, authenticated: false, username: null, needsSetup: false });
+        // If hasUsers fails (e.g. DB not ready), default to setup
+        setState({ loading: false, authenticated: false, username: null, needsSetup: true });
       }
     })();
   }, [refresh]);

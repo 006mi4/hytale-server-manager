@@ -52,7 +52,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   // Initialise services
-  const migrationsDir = path.join(__dirname, '..', 'migrations');
+  const migrationsDir = path.join(__dirname, 'migrations');
   db = new DatabaseService(dataDir, migrationsDir);
 
   // Integrity check on startup
