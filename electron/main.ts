@@ -63,7 +63,7 @@ app.whenReady().then(() => {
   const auth = new AuthService(db);
   manager = new ServerManager(db, serversDir);
   const hytaleAuth = new HytaleAuthService(db);
-  const downloader = new DownloaderService(toolsDir, serversDir);
+  const downloader = new DownloaderService(toolsDir, serversDir, hytaleAuth);
   updateService = new UpdateService();
 
   // Register IPC handlers
@@ -71,7 +71,7 @@ app.whenReady().then(() => {
   registerServerHandlers(manager);
   registerSettingsHandlers(db);
   registerUpdateHandlers(updateService);
-  registerHytaleHandlers(hytaleAuth);
+  registerHytaleHandlers(hytaleAuth, () => mainWindow);
   registerDownloaderHandlers(downloader, () => mainWindow);
 
   // java:check handler

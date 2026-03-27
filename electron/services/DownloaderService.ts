@@ -3,19 +3,20 @@ import { BrowserWindow, net } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { createWriteStream } from 'fs';
-import { pipeline } from 'stream/promises';
-import { createUnzip } from 'zlib';
 import log from 'electron-log';
+import { HytaleAuthService } from './HytaleAuthService';
 
 const DOWNLOADER_URL = 'https://downloader.hytale.com/hytale-downloader.zip';
 
 export class DownloaderService {
   private toolsDir: string;
   private serversDir: string;
+  private hytaleAuth: HytaleAuthService;
 
-  constructor(toolsDir: string, serversDir: string) {
+  constructor(toolsDir: string, serversDir: string, hytaleAuth: HytaleAuthService) {
     this.toolsDir = toolsDir;
     this.serversDir = serversDir;
+    this.hytaleAuth = hytaleAuth;
   }
 
   hasServerFiles(): boolean {
@@ -33,7 +34,6 @@ export class DownloaderService {
     log.info('Downloading hytale-downloader from', DOWNLOADER_URL);
     mainWindow.webContents.send('downloader:progress', { percent: 0, stage: 'downloading-tool' });
 
-    // Download the zip using Electron's net module (handles HTTPS properly)
     await new Promise<void>((resolve, reject) => {
       const request = net.request(DOWNLOADER_URL);
       const file = createWriteStream(zipPath);
@@ -45,80 +45,68 @@ export class DownloaderService {
           reject(new Error(`Download failed with status ${response.statusCode}`));
           return;
         }
-
         const contentLength = response.headers['content-length'];
         if (contentLength) {
           totalBytes = parseInt(Array.isArray(contentLength) ? contentLength[0] : contentLength, 10);
         }
-
         response.on('data', (chunk: Buffer) => {
           file.write(chunk);
           receivedBytes += chunk.length;
           if (totalBytes > 0) {
-            const percent = Math.round((receivedBytes / totalBytes) * 50); // 0-50% for tool download
+            const percent = Math.round((receivedBytes / totalBytes) * 100);
             mainWindow.webContents.send('downloader:progress', { percent, stage: 'downloading-tool' });
           }
         });
-
         response.on('end', () => {
           file.end(() => {
             log.info('hytale-downloader.zip downloaded:', receivedBytes, 'bytes');
             resolve();
           });
         });
-
-        response.on('error', (err: Error) => {
-          file.close();
-          reject(err);
-        });
+        response.on('error', (err: Error) => { file.close(); reject(err); });
       });
-
-      request.on('error', (err: Error) => {
-        file.close();
-        reject(err);
-      });
-
+      request.on('error', (err: Error) => { file.close(); reject(err); });
       request.end();
     });
 
-    // Extract the zip
-    log.info('Extracting hytale-downloader.zip to', this.toolsDir);
-    mainWindow.webContents.send('downloader:progress', { percent: 50, stage: 'extracting-tool' });
-
+    log.info('Extracting hytale-downloader.zip');
+    mainWindow.webContents.send('downloader:progress', { percent: 100, stage: 'extracting-tool' });
     await this.extractZip(zipPath, this.toolsDir);
 
-    // Make executable on Linux
     if (process.platform !== 'win32') {
       const binPath = this.getDownloaderPath();
-      if (fs.existsSync(binPath)) {
-        fs.chmodSync(binPath, 0o755);
-      }
+      if (fs.existsSync(binPath)) fs.chmodSync(binPath, 0o755);
     }
 
-    // Clean up zip
     fs.unlinkSync(zipPath);
-    log.info('hytale-downloader extracted successfully');
+    log.info('hytale-downloader ready');
   }
 
+  /**
+   * Download server files. Assumes OAuth2 auth is already done via HytaleAuthService.
+   * Writes the credentials file so the downloader can use them directly.
+   */
   async downloadServer(mainWindow: BrowserWindow): Promise<void> {
-    // Step 1: Download the tool if not present
     if (!this.hasToolInstalled()) {
       await this.downloadTool(mainWindow);
     }
-
     if (!this.hasToolInstalled()) {
-      throw new Error('Failed to install hytale-downloader. Binary not found at: ' + this.getDownloaderPath());
+      throw new Error('hytale-downloader not found at: ' + this.getDownloaderPath());
     }
 
-    // Step 2: Run the downloader
+    // Ensure token is valid and write credentials for the downloader
+    await this.hytaleAuth.ensureValidToken();
     const sharedDir = path.join(this.serversDir, '_shared');
     fs.mkdirSync(sharedDir, { recursive: true });
+    this.hytaleAuth.writeCredentialsFile(sharedDir);
 
     const downloaderPath = this.getDownloaderPath();
-    log.info('Running hytale-downloader from', downloaderPath);
+    log.info('Running hytale-downloader in', sharedDir);
+
+    mainWindow.webContents.send('downloader:progress', { percent: 0, stage: 'downloading-server' });
 
     return new Promise((resolve, reject) => {
-      const child = spawn(downloaderPath, [], {
+      const child = spawn(downloaderPath, ['-skip-update-check'], {
         cwd: sharedDir,
         stdio: ['pipe', 'pipe', 'pipe'],
       });
@@ -130,34 +118,12 @@ export class DownloaderService {
         fullOutput += output;
         log.info('[hytale-downloader]', output.trim());
 
-        // Parse progress percentage
         const progressMatch = output.match(/(\d+(?:\.\d+)?)%/);
         if (progressMatch) {
-          const percent = 50 + Math.round(parseFloat(progressMatch[1]) * 0.5); // 50-100%
-          mainWindow.webContents.send('downloader:progress', { percent, stage: 'downloading-server' });
-        }
-
-        // Parse OAuth2 device auth - look for the code and URL
-        const codeMatch = output.match(/Enter code:\s*([A-Z0-9-]+)/i);
-        const urlMatch = output.match(/Visit:\s*(https?:\/\/[^\s]+)/i);
-        const orUrlMatch = output.match(/Or visit:\s*(https?:\/\/[^\s]+)/i);
-
-        if (codeMatch) {
-          const code = codeMatch[1];
-          const url = urlMatch ? urlMatch[1] : 'https://accounts.hytale.com/device';
-          const directUrl = orUrlMatch ? orUrlMatch[1] : undefined;
           mainWindow.webContents.send('downloader:progress', {
-            percent: 0,
-            stage: 'auth',
-            authCode: code,
-            authUrl: url,
-            authDirectUrl: directUrl,
+            percent: Math.round(parseFloat(progressMatch[1])),
+            stage: 'downloading-server',
           });
-        }
-
-        // Auth success
-        if (output.includes('Authentication successful')) {
-          mainWindow.webContents.send('downloader:progress', { percent: 50, stage: 'downloading-server' });
         }
       };
 
@@ -166,13 +132,12 @@ export class DownloaderService {
 
       child.on('close', (code) => {
         if (code === 0) {
-          log.info('hytale-downloader completed successfully');
+          log.info('Server files downloaded successfully');
           mainWindow.webContents.send('downloader:progress', { percent: 100, stage: 'done' });
           resolve();
         } else {
-          log.error('hytale-downloader exited with code', code);
-          log.error('Full output:', fullOutput);
-          reject(new Error(`hytale-downloader exited with code ${code}. Check logs for details.`));
+          log.error('hytale-downloader exited with code', code, '\nOutput:', fullOutput);
+          reject(new Error(`Download failed (exit code ${code}). Check logs for details.`));
         }
       });
 
@@ -184,12 +149,11 @@ export class DownloaderService {
   }
 
   private getDownloaderPath(): string {
-    const ext = process.platform === 'win32' ? '.exe' : '';
-    return path.join(this.toolsDir, `hytale-downloader${ext}`);
+    const name = process.platform === 'win32' ? 'hytale-downloader-windows-amd64.exe' : 'hytale-downloader-linux-amd64';
+    return path.join(this.toolsDir, name);
   }
 
   private async extractZip(zipPath: string, destDir: string): Promise<void> {
-    // Use unzip-stream for proper zip extraction
     const unzip = require('unzip-stream');
     return new Promise((resolve, reject) => {
       fs.createReadStream(zipPath)

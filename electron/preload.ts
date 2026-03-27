@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   hytale: {
     getAuthStatus: () => ipcRenderer.invoke('hytale:getAuthStatus'),
     startDeviceAuth: () => ipcRenderer.invoke('hytale:startDeviceAuth'),
+    pollForToken: (deviceCode: string, interval: number, expiresIn: number) =>
+      ipcRenderer.invoke('hytale:pollForToken', deviceCode, interval, expiresIn),
+    refreshToken: () => ipcRenderer.invoke('hytale:refreshToken'),
     onAuthComplete: (callback: () => void) => {
       const listener = () => callback();
       ipcRenderer.on('hytale:authComplete', listener);
