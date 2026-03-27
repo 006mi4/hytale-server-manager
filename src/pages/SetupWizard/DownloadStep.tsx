@@ -1,4 +1,4 @@
-import React, { CSSProperties, useEffect, useState } from 'react';
+import React, { CSSProperties, useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../components/common/Button';
 import { Spinner } from '../../components/common/Spinner';
@@ -8,132 +8,124 @@ interface DownloadStepProps {
   onNext: () => void;
 }
 
-type Stage = 'checking' | 'ready' | 'downloading' | 'auth' | 'done' | 'error';
+type Stage = 'checking' | 'downloading-tool' | 'extracting-tool' | 'auth' | 'downloading-server' | 'done' | 'error';
+
+interface ProgressData {
+  percent: number;
+  stage: string;
+  authCode?: string;
+  authUrl?: string;
+  authDirectUrl?: string;
+}
 
 export const DownloadStep: React.FC<DownloadStepProps> = ({ onNext }) => {
   const { t } = useTranslation();
   const [stage, setStage] = useState<Stage>('checking');
   const [progress, setProgress] = useState(0);
-  const [stageLabel, setStageLabel] = useState('');
   const [authUrl, setAuthUrl] = useState('');
+  const [authDirectUrl, setAuthDirectUrl] = useState('');
   const [authCode, setAuthCode] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const started = useRef(false);
 
   useEffect(() => {
-    const unsub = window.electronAPI.downloader.onProgress(p => {
+    const unsub = window.electronAPI.downloader.onProgress((p: ProgressData) => {
       setProgress(p.percent);
-      setStageLabel(p.stage);
-      if (p.percent >= 100) setStage('done');
+
+      if (p.stage === 'downloading-tool') {
+        setStage('downloading-tool');
+      } else if (p.stage === 'extracting-tool') {
+        setStage('extracting-tool');
+      } else if (p.stage === 'auth') {
+        setStage('auth');
+        if (p.authCode) setAuthCode(p.authCode);
+        if (p.authUrl) setAuthUrl(p.authUrl);
+        if (p.authDirectUrl) setAuthDirectUrl(p.authDirectUrl);
+      } else if (p.stage === 'downloading-server') {
+        setStage('downloading-server');
+      } else if (p.stage === 'done') {
+        setStage('done');
+      }
     });
     return unsub;
   }, []);
 
-  const startDownload = async () => {
-    setStage('downloading');
-    setProgress(0);
-    setErrorMsg('');
-    try {
-      // Check if Hytale auth is needed
-      const authStatus = await window.electronAPI.hytale.getAuthStatus();
-      if (!authStatus.authenticated) {
-        setStage('auth');
-        const { url, code } = await window.electronAPI.hytale.startDeviceAuth();
-        setAuthUrl(url);
-        setAuthCode(code);
-        const unsub = window.electronAPI.hytale.onAuthComplete(() => {
-          unsub();
-          setStage('downloading');
-          window.electronAPI.downloader.downloadServer().catch((err: unknown) => {
-            setErrorMsg(err instanceof Error ? err.message : 'Download failed');
-            setStage('error');
-          });
-        });
-      } else {
-        await window.electronAPI.downloader.downloadServer();
-      }
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Download failed');
-      setStage('error');
-    }
-  };
-
   useEffect(() => {
     (async () => {
       try {
-        const ok = await window.electronAPI.downloader.checkFiles();
-        if (ok) { setStage('done'); setProgress(100); }
-        else setStage('ready');
+        const hasFiles = await window.electronAPI.downloader.checkFiles();
+        if (hasFiles) {
+          setStage('done');
+          setProgress(100);
+        } else {
+          startDownload();
+        }
       } catch {
-        setStage('ready');
+        startDownload();
       }
     })();
   }, []);
 
-  const containerStyle: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
+  const startDownload = async () => {
+    if (started.current) return;
+    started.current = true;
+    setStage('downloading-tool');
+    setProgress(0);
+    setErrorMsg('');
+    try {
+      await window.electronAPI.downloader.downloadServer();
+      setStage('done');
+      setProgress(100);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Download failed');
+      setStage('error');
+      started.current = false;
+    }
   };
 
+  const retry = () => {
+    started.current = false;
+    startDownload();
+  };
+
+  const getStageLabel = (): string => {
+    switch (stage) {
+      case 'downloading-tool': return 'Downloading Hytale Downloader...';
+      case 'extracting-tool': return 'Extracting Hytale Downloader...';
+      case 'downloading-server': return 'Downloading server files...';
+      default: return t('setup.downloading');
+    }
+  };
+
+  const containerStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: '20px' };
+
   const progressBarOuter: CSSProperties = {
-    width: '100%',
-    height: '8px',
-    background: 'rgba(255,255,255,0.1)',
-    borderRadius: '4px',
-    overflow: 'hidden',
+    width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)',
+    borderRadius: '4px', overflow: 'hidden',
   };
 
   const progressBarInner: CSSProperties = {
-    height: '100%',
-    width: `${progress}%`,
+    height: '100%', width: `${progress}%`,
     background: `linear-gradient(90deg, ${theme.accent.primary}, ${theme.accent.secondary})`,
-    borderRadius: '4px',
-    transition: 'width 0.3s ease',
+    borderRadius: '4px', transition: 'width 0.3s ease',
   };
 
   const authBoxStyle: CSSProperties = {
-    background: theme.bg.surface,
-    border: `1px solid rgba(255,255,255,0.15)`,
-    borderRadius: theme.radius,
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    alignItems: 'center',
+    background: theme.bg.surface, border: '1px solid rgba(255,255,255,0.15)',
+    borderRadius: theme.radius, padding: '24px',
+    display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center',
   };
 
   const codeStyle: CSSProperties = {
-    fontFamily: 'monospace',
-    fontSize: '28px',
-    fontWeight: 700,
-    color: theme.accent.secondary,
-    letterSpacing: '0.15em',
-    background: 'rgba(244,208,63,0.1)',
-    padding: '8px 20px',
-    borderRadius: theme.radius,
-  };
-
-  const statusTextStyle: CSSProperties = {
-    fontSize: '14px',
-    color: theme.text.secondary,
-    textAlign: 'center',
+    fontFamily: 'monospace', fontSize: '32px', fontWeight: 700,
+    color: theme.accent.secondary, letterSpacing: '0.15em',
+    background: 'rgba(244,208,63,0.1)', padding: '12px 24px', borderRadius: theme.radius,
+    userSelect: 'all',
   };
 
   const errorStyle: CSSProperties = {
-    background: `${theme.status.error}22`,
-    border: `1px solid ${theme.status.error}66`,
-    borderRadius: theme.radius,
-    padding: '12px 16px',
-    color: theme.status.error,
-    fontSize: '13px',
-  };
-
-  const successStyle: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '12px',
-    color: theme.status.success,
+    background: `${theme.status.error}22`, border: `1px solid ${theme.status.error}66`,
+    borderRadius: theme.radius, padding: '12px 16px', color: theme.status.error, fontSize: '13px',
   };
 
   return (
@@ -144,21 +136,12 @@ export const DownloadStep: React.FC<DownloadStepProps> = ({ onNext }) => {
         </div>
       )}
 
-      {stage === 'ready' && (
-        <>
-          <p style={statusTextStyle}>{t('setup.downloading')}</p>
-          <Button variant="primary" onClick={startDownload} style={{ justifyContent: 'center' }}>
-            {t('setup.next')}
-          </Button>
-        </>
-      )}
-
-      {stage === 'downloading' && (
+      {(stage === 'downloading-tool' || stage === 'extracting-tool' || stage === 'downloading-server') && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Spinner size={18} />
             <span style={{ fontSize: '14px', color: theme.text.secondary }}>
-              {stageLabel || t('setup.downloading')}
+              {getStageLabel()}
             </span>
           </div>
           <div style={progressBarOuter}>
@@ -172,24 +155,30 @@ export const DownloadStep: React.FC<DownloadStepProps> = ({ onNext }) => {
 
       {stage === 'auth' && (
         <div style={authBoxStyle}>
-          <p style={{ fontSize: '14px', color: theme.text.primary, fontWeight: 600 }}>
+          <p style={{ fontSize: '16px', color: theme.text.primary, fontWeight: 600 }}>
             {t('setup.authRequired')}
           </p>
-          <p style={statusTextStyle}>{t('setup.visitUrl')}</p>
+          <p style={{ fontSize: '14px', color: theme.text.secondary, textAlign: 'center' }}>
+            {t('setup.visitUrl')}
+          </p>
           <a
-            href={authUrl}
+            href={authDirectUrl || authUrl}
             target="_blank"
             rel="noreferrer"
-            style={{ color: theme.accent.primary, fontSize: '13px', wordBreak: 'break-all' }}
+            style={{ color: theme.accent.primary, fontSize: '14px', wordBreak: 'break-all', textDecoration: 'underline' }}
           >
             {authUrl}
           </a>
           <div style={codeStyle}>{authCode}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.text.secondary, fontSize: '13px' }}>
+            <Spinner size={14} />
+            <span>Waiting for authorization...</span>
+          </div>
         </div>
       )}
 
       {stage === 'done' && (
-        <div style={successStyle}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: theme.status.success }}>
           <span style={{ fontSize: '36px' }}>✓</span>
           <span style={{ fontSize: '16px', fontWeight: 600 }}>Server files ready!</span>
           <Button variant="primary" onClick={onNext} style={{ justifyContent: 'center' }}>
@@ -201,7 +190,7 @@ export const DownloadStep: React.FC<DownloadStepProps> = ({ onNext }) => {
       {stage === 'error' && (
         <>
           <div style={errorStyle}>{errorMsg || t('common.error')}</div>
-          <Button variant="secondary" onClick={startDownload} style={{ justifyContent: 'center' }}>
+          <Button variant="secondary" onClick={retry} style={{ justifyContent: 'center' }}>
             Retry
           </Button>
         </>
