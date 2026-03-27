@@ -129,12 +129,7 @@ export class ServerManager {
     fs.mkdirSync(serverBinPath, { recursive: true });
 
     if (fs.existsSync(sharedServerDir)) {
-      for (const file of fs.readdirSync(sharedServerDir)) {
-        fs.copyFileSync(
-          path.join(sharedServerDir, file),
-          path.join(serverBinPath, file),
-        );
-      }
+      fs.cpSync(sharedServerDir, serverBinPath, { recursive: true });
     }
 
     if (fs.existsSync(sharedAssetsZip)) {
