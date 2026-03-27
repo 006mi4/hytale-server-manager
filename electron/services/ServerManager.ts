@@ -279,7 +279,7 @@ export class ServerManager {
       }
 
       // Update last_started_at
-      this.db.run('UPDATE servers SET last_started_at = datetime("now") WHERE id = ?', [id]);
+      this.db.run("UPDATE servers SET last_started_at = datetime('now') WHERE id = ?", [id]);
     });
   }
 
