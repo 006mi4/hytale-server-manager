@@ -109,12 +109,23 @@ export const ServerAuthPopup: React.FC = () => {
           Your Hytale server needs to be verified. Open the link below and enter the code to authenticate.
         </div>
 
-        <a href={authData.url} target="_blank" rel="noreferrer" style={linkStyle}>
-          {authData.url}
-        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center' }}>
+          <div style={{ ...linkStyle, flex: 1, textAlign: 'center' }}>{authData.url}</div>
+          <Button variant="secondary" size="sm" onClick={() => {
+            navigator.clipboard.writeText(authData.url);
+          }}>Copy</Button>
+          <Button variant="primary" size="sm" onClick={() => {
+            window.open(authData.url, '_blank');
+          }}>Open</Button>
+        </div>
 
         <div style={{ fontSize: '12px', color: theme.text.secondary }}>Authorization Code:</div>
-        <div style={codeStyle}>{authData.code}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={codeStyle}>{authData.code}</div>
+          <Button variant="secondary" size="sm" onClick={() => {
+            navigator.clipboard.writeText(authData.code);
+          }}>Copy</Button>
+        </div>
 
         <div style={waitingStyle}>
           <Spinner size={14} />
