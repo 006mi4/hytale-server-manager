@@ -18,8 +18,9 @@ export class JavaService {
           resolve({ found: false, version: null, supported: false, path: null, rawOutput: '' });
           return;
         }
-        const output = stderr || stdout;
-        const match = output.match(/openjdk\s+(\d+)/i);
+        const output = stdout || stderr;
+        // Match both "openjdk 25" and "java 25" (Oracle JDK)
+        const match = output.match(/(?:openjdk|java)\s+(\d+)/i);
         const version = match ? parseInt(match[1], 10) : null;
         resolve({
           found: true,

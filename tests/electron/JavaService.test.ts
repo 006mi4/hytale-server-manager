@@ -8,10 +8,22 @@ vi.mock('child_process', () => ({
 import { execFile } from 'child_process';
 
 describe('JavaService', () => {
-  it('should detect Java 25', async () => {
+  it('should detect OpenJDK 25', async () => {
     const mockExecFile = vi.mocked(execFile);
     mockExecFile.mockImplementation((_cmd: any, _args: any, callback: any) => {
-      callback(null, '', 'openjdk 25.0.1 2025-10-21 LTS\nOpenJDK Runtime Environment Temurin-25.0.1+8');
+      callback(null, 'openjdk 25.0.1 2025-10-21 LTS\nOpenJDK Runtime Environment Temurin-25.0.1+8', '');
+      return {} as any;
+    });
+    const result = await JavaService.checkJava();
+    expect(result.found).toBe(true);
+    expect(result.version).toBe(25);
+    expect(result.supported).toBe(true);
+  });
+
+  it('should detect Oracle Java 25', async () => {
+    const mockExecFile = vi.mocked(execFile);
+    mockExecFile.mockImplementation((_cmd: any, _args: any, callback: any) => {
+      callback(null, 'java 25.0.1 2025-10-21 LTS\nJava(TM) SE Runtime Environment (build 25.0.1+8-LTS-27)', '');
       return {} as any;
     });
     const result = await JavaService.checkJava();
