@@ -1,0 +1,29 @@
+appId: com.hytale-server-manager.app
+productName: Hytale Server Manager
+directories:
+  output: out
+  buildResources: build
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - node_modules/**/*
+  - package.json
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  category: Utility
+publish:
+  provider: github
+  owner: OWNER
+  repo: hytale-server-manager
