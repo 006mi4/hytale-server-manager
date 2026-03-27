@@ -25,5 +25,5 @@ linux:
   category: Utility
 publish:
   provider: github
-  owner: OWNER
+  owner: 006mi4
   repo: hytale-server-manager
