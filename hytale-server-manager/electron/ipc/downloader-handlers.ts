@@ -1,11 +1,11 @@
-import { ipcMain } from 'electron';
-import fs from 'fs';
-import path from 'path';
+import { ipcMain, BrowserWindow } from 'electron';
+import { DownloaderService } from '../services/DownloaderService';
 
-export function registerDownloaderHandlers(serversDir: string) {
-  ipcMain.handle('downloader:downloadServer', () => {});
-  ipcMain.handle('downloader:checkFiles', () => {
-    const sharedDir = path.join(serversDir, '_shared');
-    return fs.existsSync(path.join(sharedDir, 'Server', 'HytaleServer.jar'));
+export function registerDownloaderHandlers(downloader: DownloaderService, getMainWindow: () => BrowserWindow | null) {
+  ipcMain.handle('downloader:downloadServer', async () => {
+    const win = getMainWindow();
+    if (!win) throw new Error('No window');
+    await downloader.downloadServer(win);
   });
+  ipcMain.handle('downloader:checkFiles', () => downloader.hasServerFiles());
 }
