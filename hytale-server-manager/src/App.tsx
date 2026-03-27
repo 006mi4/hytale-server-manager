@@ -1,4 +1,4 @@
-import React, { CSSProperties } from 'react';
+import React, { CSSProperties, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { TopBar } from './components/TopBar';
@@ -10,6 +10,7 @@ import { Dashboard } from './pages/Dashboard/Dashboard';
 import { ServerDetail } from './pages/ServerDetail/ServerDetail';
 import { Settings } from './pages/Settings/Settings';
 import { theme } from './styles/theme';
+import i18n from './i18n';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const mainStyle: CSSProperties = {
@@ -88,6 +89,14 @@ const AppRoutes: React.FC = () => {
 };
 
 export default function App() {
+  useEffect(() => {
+    window.electronAPI.settings.get().then((s) => {
+      if (s?.language) {
+        i18n.changeLanguage(s.language);
+      }
+    }).catch(() => {});
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>

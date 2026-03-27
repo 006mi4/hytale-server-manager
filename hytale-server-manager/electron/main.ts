@@ -1,9 +1,16 @@
+import log from 'electron-log';
+log.transports.file.maxSize = 5 * 1024 * 1024;
+log.transports.file.level = 'info';
+
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { DatabaseService } from './services/DatabaseService';
 import { AuthService } from './services/AuthService';
 import { ServerManager } from './services/ServerManager';
 import { JavaService } from './services/JavaService';
+import { HytaleAuthService } from './services/HytaleAuthService';
+import { DownloaderService } from './services/DownloaderService';
+import { UpdateService } from './services/UpdateService';
 import { registerAuthHandlers } from './ipc/auth-handlers';
 import { registerServerHandlers } from './ipc/server-handlers';
 import { registerSettingsHandlers } from './ipc/settings-handlers';
@@ -13,10 +20,12 @@ import { registerDownloaderHandlers } from './ipc/downloader-handlers';
 
 const dataDir = path.join(app.getPath('userData'), 'data');
 const serversDir = path.join(app.getPath('userData'), 'servers');
+const toolsDir = path.join(app.getPath('userData'), 'tools');
 
 let mainWindow: BrowserWindow | null = null;
 let db: DatabaseService;
 let manager: ServerManager;
+let updateService: UpdateService;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -48,19 +57,22 @@ app.whenReady().then(() => {
 
   // Integrity check on startup
   if (!db.checkIntegrity()) {
-    console.error('Database integrity check failed');
+    log.error('Database integrity check failed');
   }
 
   const auth = new AuthService(db);
   manager = new ServerManager(db, serversDir);
+  const hytaleAuth = new HytaleAuthService(db);
+  const downloader = new DownloaderService(toolsDir, serversDir);
+  updateService = new UpdateService();
 
   // Register IPC handlers
   registerAuthHandlers(auth);
   registerServerHandlers(manager);
   registerSettingsHandlers(db);
-  registerUpdateHandlers();
-  registerHytaleHandlers();
-  registerDownloaderHandlers(serversDir);
+  registerUpdateHandlers(updateService);
+  registerHytaleHandlers(hytaleAuth);
+  registerDownloaderHandlers(downloader, () => mainWindow);
 
   // java:check handler
   ipcMain.handle('java:check', async () => {
@@ -100,6 +112,9 @@ app.whenReady().then(() => {
   };
 
   createWindow();
+
+  updateService.setWindow(mainWindow!);
+  setTimeout(() => updateService.check(), 5000);
 });
 
 app.on('before-quit', () => {
