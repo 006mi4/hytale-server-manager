@@ -1,12 +1,12 @@
 import React, { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
+import { useAuth } from '../../hooks/useAuth';
 import { theme } from '../../styles/theme';
 
 export const CompleteStep: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { finishSetup } = useAuth();
 
   const containerStyle: CSSProperties = {
     display: 'flex',
@@ -43,7 +43,7 @@ export const CompleteStep: React.FC = () => {
       <Button
         variant="primary"
         size="lg"
-        onClick={() => navigate('/dashboard')}
+        onClick={() => finishSetup()}
         style={{ marginTop: '8px', justifyContent: 'center', minWidth: '200px' }}
       >
         {t('setup.finish')}

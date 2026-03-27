@@ -5,6 +5,7 @@ interface AuthState {
   authenticated: boolean;
   username: string | null;
   needsSetup: boolean;
+  setupComplete: boolean;
 }
 
 interface AuthContextValue extends AuthState {
@@ -12,6 +13,7 @@ interface AuthContextValue extends AuthState {
   register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  finishSetup: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -32,18 +34,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authenticated: false,
     username: null,
     needsSetup: false,
+    setupComplete: false,
   });
 
   const refresh = useCallback(async () => {
     try {
       const session = await window.electronAPI.auth.checkSession();
       if (session.valid) {
-        setState({ loading: false, authenticated: true, username: session.username, needsSetup: false });
+        setState({ loading: false, authenticated: true, username: session.username, needsSetup: false, setupComplete: true });
       } else {
-        setState({ loading: false, authenticated: false, username: null, needsSetup: false });
+        setState({ loading: false, authenticated: false, username: null, needsSetup: false, setupComplete: false });
       }
     } catch {
-      setState({ loading: false, authenticated: false, username: null, needsSetup: false });
+      setState({ loading: false, authenticated: false, username: null, needsSetup: false, setupComplete: false });
     }
   }, []);
 
@@ -52,33 +55,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const hasUsers = await window.electronAPI.auth.hasUsers();
         if (!hasUsers) {
-          setState({ loading: false, authenticated: false, username: null, needsSetup: true });
+          setState({ loading: false, authenticated: false, username: null, needsSetup: true, setupComplete: false });
         } else {
           await refresh();
         }
       } catch {
         // If hasUsers fails (e.g. DB not ready), default to setup
-        setState({ loading: false, authenticated: false, username: null, needsSetup: true });
+        setState({ loading: false, authenticated: false, username: null, needsSetup: true, setupComplete: false });
       }
     })();
   }, [refresh]);
 
   const login = useCallback(async (username: string, password: string, remember: boolean) => {
     await window.electronAPI.auth.login(username, password, remember);
-    setState({ loading: false, authenticated: true, username, needsSetup: false });
+    setState({ loading: false, authenticated: true, username, needsSetup: false, setupComplete: true });
   }, []);
 
   const register = useCallback(async (username: string, password: string) => {
     await window.electronAPI.auth.register(username, password);
-    setState({ loading: false, authenticated: true, username, needsSetup: false });
+    // Stay in setup wizard — authenticated but setup not complete yet
+    setState({ loading: false, authenticated: true, username, needsSetup: true, setupComplete: false });
   }, []);
 
   const logout = useCallback(async () => {
     await window.electronAPI.auth.logout();
-    setState({ loading: false, authenticated: false, username: null, needsSetup: false });
+    setState({ loading: false, authenticated: false, username: null, needsSetup: false, setupComplete: false });
   }, []);
 
-  const value: AuthContextValue = { ...state, login, register, logout, refresh };
+  const finishSetup = useCallback(() => {
+    setState(prev => ({ ...prev, needsSetup: false, setupComplete: true }));
+  }, []);
+
+  const value: AuthContextValue = { ...state, login, register, logout, refresh, finishSetup };
 
   return createElement(AuthContext.Provider, { value }, children);
 }
