@@ -4,3 +4,6 @@ dist-electron/
 out/
 *.db
 .env
+.claude/
+.superpowers/
+docs/superpowers/
