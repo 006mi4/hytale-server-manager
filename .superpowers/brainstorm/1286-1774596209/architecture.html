@@ -1,0 +1,98 @@
+<h2>Architektur: Hytale Server Manager</h2>
+<p class="subtitle">Electron + React + SQLite — Ueberblick der Komponenten</p>
+
+<div class="mockup">
+  <div class="mockup-header">System-Architektur</div>
+  <div class="mockup-body" style="padding: 30px; background: #0d1117; font-family: monospace; font-size: 13px;">
+
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+
+      <!-- Electron Main Process -->
+      <div style="border: 2px solid #e94560; border-radius: 12px; padding: 16px; width: 280px; background: rgba(233,69,96,0.08);">
+        <div style="color: #e94560; font-weight: bold; font-size: 14px; margin-bottom: 12px; text-align: center;">ELECTRON MAIN PROCESS</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #f4d03f;">ServerManager</span><br>
+            <span style="font-size: 11px; color: #888;">Java-Prozesse spawnen/stoppen, Konsolen-Output streamen, Port-Verwaltung</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #f4d03f;">AuthService</span><br>
+            <span style="font-size: 11px; color: #888;">Lokale Accounts (bcrypt), Session-Tokens, Remember-Me</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #f4d03f;">HytaleAuthService</span><br>
+            <span style="font-size: 11px; color: #888;">OAuth2 Device Flow, Token-Speicherung, Refresh</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #f4d03f;">DownloaderService</span><br>
+            <span style="font-size: 11px; color: #888;">hytale-downloader CLI ausfuehren, Fortschritt melden</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #f4d03f;">DatabaseService</span><br>
+            <span style="font-size: 11px; color: #888;">better-sqlite3, verschluesselt, Accounts + Server-Configs</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #f4d03f;">UpdateService</span><br>
+            <span style="font-size: 11px; color: #888;">electron-updater, GitHub Releases pruefen</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- IPC Bridge -->
+      <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; color: #888;">
+        <div style="font-size: 24px;">⟵</div>
+        <div style="writing-mode: vertical-rl; font-size: 12px; color: #f4d03f; padding: 8px 0;">IPC Bridge</div>
+        <div style="font-size: 24px;">⟶</div>
+      </div>
+
+      <!-- React Renderer -->
+      <div style="border: 2px solid #4a90d9; border-radius: 12px; padding: 16px; width: 280px; background: rgba(74,144,217,0.08);">
+        <div style="color: #4a90d9; font-weight: bold; font-size: 14px; margin-bottom: 12px; text-align: center;">REACT RENDERER</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #64b5f6;">SetupWizard</span><br>
+            <span style="font-size: 11px; color: #888;">Account erstellen, Hytale-Auth, Server-Download</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #64b5f6;">LoginPage</span><br>
+            <span style="font-size: 11px; color: #888;">Login-Formular, Remember-Me Checkbox</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #64b5f6;">Dashboard</span><br>
+            <span style="font-size: 11px; color: #888;">Server-Liste, Status-Uebersicht, Quick-Actions</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #64b5f6;">ServerDetail</span><br>
+            <span style="font-size: 11px; color: #888;">Konsole, Config-Editor, Start/Stop</span>
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px 12px; border-radius: 6px; color: #ccc;">
+            <span style="color: #64b5f6;">Settings</span><br>
+            <span style="font-size: 11px; color: #888;">Sprache, Theme, JVM-Defaults, Pfade</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom: External Systems -->
+    <div style="margin-top: 24px; text-align: center; color: #888; font-size: 12px;">▼ ▼ ▼</div>
+    <div style="display: flex; gap: 16px; justify-content: center; margin-top: 12px; flex-wrap: wrap;">
+      <div style="border: 1px solid #555; border-radius: 8px; padding: 10px 16px; color: #aaa; font-size: 12px; background: rgba(255,255,255,0.03);">
+        <span style="color: #6ba34a;">SQLite DB</span> — Accounts, Server-Configs
+      </div>
+      <div style="border: 1px solid #555; border-radius: 8px; padding: 10px 16px; color: #aaa; font-size: 12px; background: rgba(255,255,255,0.03);">
+        <span style="color: #6ba34a;">Filesystem</span> — servers/, Assets.zip, Logs
+      </div>
+      <div style="border: 1px solid #555; border-radius: 8px; padding: 10px 16px; color: #aaa; font-size: 12px; background: rgba(255,255,255,0.03);">
+        <span style="color: #6ba34a;">Java 25</span> — HytaleServer.jar Prozesse
+      </div>
+      <div style="border: 1px solid #555; border-radius: 8px; padding: 10px 16px; color: #aaa; font-size: 12px; background: rgba(255,255,255,0.03);">
+        <span style="color: #6ba34a;">GitHub</span> — App Auto-Updates
+      </div>
+      <div style="border: 1px solid #555; border-radius: 8px; padding: 10px 16px; color: #aaa; font-size: 12px; background: rgba(255,255,255,0.03);">
+        <span style="color: #6ba34a;">Hytale API</span> — OAuth2 Device Auth
+      </div>
+    </div>
+
+  </div>
+</div>

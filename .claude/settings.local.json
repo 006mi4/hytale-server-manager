@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "*",
+      "Bash(git commit:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx electron-rebuild:*)",
+      "Bash(rm -f \"$APPDATA/hytale-server-manager/data/data.db\")",
+      "Bash(rm -f \"$LOCALAPPDATA/hytale-server-manager/data/data.db\")",
+      "Read(//c/Users/timvi/Desktop/Hytale/hytale-server-manager/$APPDATA/**)",
+      "Read(//c/Users/timvi/Desktop/Hytale/hytale-server-manager/$LOCALAPPDATA/**)",
+      "Read(//c/Users/timvi/Desktop/Hytale/hytale-server-manager/$APPDATA/hytale-server-manager/**)"
+    ]
+  }
+}
