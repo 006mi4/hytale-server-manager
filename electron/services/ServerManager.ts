@@ -132,8 +132,16 @@ export class ServerManager {
       fs.cpSync(sharedServerDir, serverBinPath, { recursive: true });
     }
 
-    if (fs.existsSync(sharedAssetsZip)) {
-      fs.copyFileSync(sharedAssetsZip, path.join(serverPath, 'Assets.zip'));
+    // Link Assets.zip instead of copying (it's ~3.4GB)
+    const destAssets = path.join(serverPath, 'Assets.zip');
+    if (fs.existsSync(sharedAssetsZip) && !fs.existsSync(destAssets)) {
+      try {
+        // Try hardlink first (no extra disk space, works on same drive)
+        fs.linkSync(sharedAssetsZip, destAssets);
+      } catch {
+        // Fallback to copy if hardlink fails
+        fs.copyFileSync(sharedAssetsZip, destAssets);
+      }
     }
 
     // Write jvm.options
@@ -206,8 +214,9 @@ export class ServerManager {
     const server = this.getServerById(id);
     if (!server) throw new Error(`Server ${id} not found`);
 
-    const jarPath = path.join(server.path, 'Server', 'HytaleServer.jar');
+    const serverDir = path.join(server.path, 'Server');
     const jvmOptsFile = path.join(server.path, 'jvm.options');
+    const aotCache = path.join(serverDir, 'HytaleServer.aot');
 
     let jvmArgs: string[] = [];
     if (fs.existsSync(jvmOptsFile)) {
@@ -217,9 +226,15 @@ export class ServerManager {
         .filter(l => l.length > 0 && !l.startsWith('#'));
     }
 
-    const args = [...jvmArgs, '-jar', jarPath];
+    // Build args: JVM opts, AOT cache (if exists), -jar, server args
+    const args = [...jvmArgs];
+    if (fs.existsSync(aotCache)) {
+      args.push('-XX:AOTCache=HytaleServer.aot');
+    }
+    args.push('-jar', 'HytaleServer.jar', '--assets', '../Assets.zip', '--bind', String(server.port));
+
     const proc = spawn(javaPath, args, {
-      cwd: server.path,
+      cwd: serverDir,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 

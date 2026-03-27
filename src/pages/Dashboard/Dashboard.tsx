@@ -156,12 +156,18 @@ export const Dashboard: React.FC = () => {
             autoFocus
             required
           />
+          {creating && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: theme.text.secondary, fontSize: '13px' }}>
+              <Spinner size={16} />
+              <span>Creating server (copying files)...</span>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>
+            <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={creating}>
               {t('dashboard.cancel')}
             </Button>
             <Button type="submit" variant="primary" disabled={creating || !newName.trim()}>
-              {creating ? '...' : t('dashboard.create')}
+              {creating ? <><Spinner size={14} /> Creating...</> : t('dashboard.create')}
             </Button>
           </div>
         </form>
