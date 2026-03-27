@@ -9,6 +9,7 @@ import { SetupWizard } from './pages/SetupWizard/SetupWizard';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { ServerDetail } from './pages/ServerDetail/ServerDetail';
 import { Settings } from './pages/Settings/Settings';
+import { ServerAuthPopup } from './components/ServerAuthPopup';
 import { theme } from './styles/theme';
 import i18n from './i18n';
 
@@ -101,6 +102,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <AppRoutes />
+        <ServerAuthPopup />
       </AuthProvider>
     </BrowserRouter>
   );

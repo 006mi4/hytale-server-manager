@@ -105,6 +105,24 @@ app.whenReady().then(() => {
     // After starting, subscribe to console output and status changes for this server
     originalOnConsoleOutput(id, (line: string) => {
       mainWindow?.webContents.send('servers:consoleOutput', id, line);
+
+      // Detect device auth code from server output and forward to renderer as popup
+      const codeMatch = line.match(/Authorization code:\s*([A-Za-z0-9-]+)/i)
+        || line.match(/Enter code:\s*([A-Za-z0-9-]+)/i)
+        || line.match(/user_code=([A-Za-z0-9-]+)/i);
+      const urlMatch = line.match(/Visit:\s*(https?:\/\/[^\s]+)/i)
+        || line.match(/visit.*?(https?:\/\/[^\s]+)/i);
+
+      if (codeMatch) {
+        const code = codeMatch[1];
+        const url = urlMatch ? urlMatch[1] : 'https://oauth.accounts.hytale.com/oauth2/device/verify';
+        mainWindow?.webContents.send('server:authRequired', { serverId: id, code, url });
+      }
+
+      // Detect successful auth
+      if (line.includes('Authentication successful')) {
+        mainWindow?.webContents.send('server:authSuccess', { serverId: id });
+      }
     });
     originalOnStatusChange(id, (status) => {
       mainWindow?.webContents.send('servers:statusChange', id, status);

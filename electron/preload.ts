@@ -85,6 +85,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     check: () => ipcRenderer.invoke('java:check'),
   },
 
+  onServerAuthRequired: (callback: (data: { serverId: number; code: string; url: string }) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: { serverId: number; code: string; url: string }) => callback(data);
+    ipcRenderer.on('server:authRequired', listener);
+    return () => ipcRenderer.removeListener('server:authRequired', listener);
+  },
+  onServerAuthSuccess: (callback: (data: { serverId: number }) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: { serverId: number }) => callback(data);
+    ipcRenderer.on('server:authSuccess', listener);
+    return () => ipcRenderer.removeListener('server:authSuccess', listener);
+  },
+
   window: {
     minimize: () => ipcRenderer.send('window:minimize'),
     maximize: () => ipcRenderer.send('window:maximize'),
